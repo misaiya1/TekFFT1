@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['E:\\WorkSpace\\test\\pythonProject\\共模电流_寻\\py\\plcdata'],
+             pathex=[],
              binaries=[],
              datas=[],
              hiddenimports=[],

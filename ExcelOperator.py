@@ -13,7 +13,7 @@ import wx.xrc
 import locale
 
 fbase = 50
-hhh = 401
+hhh = 801
 
 ''' 函数：返回变量是否被定义过 '''
 
@@ -45,6 +45,7 @@ class MyFrame(plc):
         wx.Frame.SetBackgroundColour(self, 'Write')  # ???
         font1 = wx.Font(22, wx.MODERN, wx.NORMAL, wx.NORMAL)
         self.m_comboBox1.AppendItems('MDO4054C')
+        self.m_comboBox1.AppendItems('Keysight')
         # self.m_staticText15.SetFont(font1)
         # self.m_button.SetFont(font1)
         # self.m_button2.SetFont(font1)
@@ -78,20 +79,20 @@ class MyFrame(plc):
         checkedItemsl = list(checkedItems)
         print(checkedItemsl)
         f_csv3 = f_csv2[checkedItemsl]
-        f_csv3['TIME'] = f_csv2['TIME']
 
         # 过滤根据时间范围
         T0 = float(self.m_T0.GetValue())
         Tend = float(self.m_Tend.GetValue())
-        f_csv3 = f_csv3[f_csv3['TIME'] <= Tend]
-        f_csv3 = f_csv3[f_csv3['TIME'] >= T0]
+        f_csv3 = f_csv3[f_csv2['TIME'] <= Tend]
+        f_csv3 = f_csv3[f_csv2['TIME'] >= T0]
         f_csv3 = f_csv3.replace([np.inf, -np.inf], 0)
         # 过滤表加权
         for item in checkedItemsl:
             f_csv3[item] = f_csv3[item] * dic[item]
 
         f_csv3['FFT'] = f_csv3.apply(lambda x: x.sum(), axis=1)
-
+        f_csv3['TIME'] = f_csv2['TIME']
+        # debug
         print(f_csv3.head())
         print(f_csv3.tail())
 
@@ -109,7 +110,7 @@ class MyFrame(plc):
 
         # plt.figure(2)#幅值图##########################
         from FFTtest import myfft
-        [F1, P1, Fs__len] = myfft(f_csv3['TIME'].values, f_csv3['FFT'].values, f_sample2)
+        [F1, P1, Fs__len, rms_value] = myfft(f_csv3['TIME'].values, f_csv3['FFT'].values, f_sample2)
         print('Fs__len = %s' % Fs__len)
 
         temp_ind = int(np.round(50 / Fs__len))
@@ -139,7 +140,8 @@ class MyFrame(plc):
             ax2 = fig2.add_subplot(1, 1, 1)
 
             ax2.grid(linestyle='-.', linewidth=0.3, alpha=0.9)
-            ax2.set_title('Data - Frequency Domain /THD = %.2f %%' % thd)
+            # ax2.set_title('Data - Frequency Domain /THD = %.2f %%' % thd)
+            ax2.set_title('Data - Frequency Domain /rms = %.2f ' % rms_value)
             ax2.set_xlabel('Frequency')
             ax2.set_ylabel('Mag(Phase Peak)')
 
@@ -238,7 +240,7 @@ class MyFrame(plc):
         # fh.close()
 
     def OnFileChanged(self, event):
-        global f_sample1, len_t, t
+        global f_sample1, len_t, time_t
         self.m_checkList3.Clear()
         print("OnFileChanged")
         locale.setlocale(locale.LC_ALL, 'English_United States')
@@ -247,41 +249,119 @@ class MyFrame(plc):
         print(type(CSV_Path))
         print((CSV_Path))
         # 打开文件，查询前25行
-        f = open(CSV_Path)
-        f_csv = pd.read_csv(f, engine='python', nrows=25, header=2)
-        # f_csv = f_csv.fillna(-1)
-        f_csv.head(15)
+        global f_csv2
 
-        # 分析前25行#####################################################################################
-        model = ''
-        dt = float(0)
-        rlen = float(0)
-        for i in range(0, 15):
-            if f_csv.iloc[i, 0] == 'Sample Interval':
-                dt = float(f_csv.iloc[i, 1])
-        for i in range(0, 15):
-            if f_csv.iloc[i, 0] == 'Record Length':
-                rlen = float(f_csv.iloc[i, 1])
+        if self.m_comboBox1.GetValue() == 'MDO4054C' or self.m_comboBox1.GetValue() == '示波器型号':
+            f = open(CSV_Path)
+            f_csv = pd.read_csv(f, engine='python', nrows=25, header=2)
+            # f_csv = f_csv.fillna(-1)
+            f_csv.head(15)
 
-        if dt == float(0) or rlen == float(0):
-            print("读取错误，程序结束")
+            # 分析前25行#####################################################################################
+            model = ''
+            dt = float(0)
+            rlen = float(0)
+            for i in range(0, 15):
+                if f_csv.iloc[i, 0] == 'Sample Interval':
+                    dt = float(f_csv.iloc[i, 1])
+            for i in range(0, 15):
+                if f_csv.iloc[i, 0] == 'Record Length':
+                    rlen = float(f_csv.iloc[i, 1])
+            # for i in range(0, 25):
+            #     if f_csv.iloc[i, 0] == 'TIME':
+            #         print('TIME in line')
+            #         print(i)
 
-        f_sample1 = 1 / dt
+            if dt == float(0) or rlen == float(0):
+                dlg = wx.MessageDialog(None, u"文件读取错误，请确认示波器型号", u"错误信息", wx.YES_NO | wx.ICON_QUESTION)
+                if dlg.ShowModal() == wx.ID_YES:
+                    self.m_filePicker1.SetPath('')
+                    CSV_Path = self.m_filePicker1.GetPath()
+                    self.m_comboBox1.SetFocus()
+                    # self.Close(True)
+                    dlg.Destroy()
+
+            savei = 0
+            # TIME的位置#####
+            for i in range(0, 22):
+                if f_csv.iloc[i, 0] == 'TIME':
+                    savei = i
+            # print('savei = %f' % savei)
+
+            # 分析整表####################################################################
+            f = open(CSV_Path)
+            f_csv2 = pd.read_csv(f, engine='python', header=int(savei + 3))
+
+            f_csv2 = f_csv2.fillna(-1)
+            # ################### 更新勾选项 ####################
+            temp = f_csv2.columns.values
+            ind = ["CH1", "CH2", "CH3", "CH4"]
+
+            for i in ind:
+                if i in temp:
+                    self.m_checkList3.AppendItems(i)
+
+            self.m_checkList3.Update()
+            print('file end')
+
+        elif self.m_comboBox1.GetValue() == 'Keysight':
+            f = open(CSV_Path)
+            f_csv2 = pd.read_csv(f, engine='python', nrows=200, header=None)
+            # temp = f_csv2.columns.values
+            [hang, lie] = f_csv2.shape
+            name = []
+            for i in range(lie):
+                name.append(f_csv2.iloc[0, i])
+            print(name)
+
+            for i in range(len(name)):
+                if name[i] == '1':
+                    name[i] = 'CH1'
+                if name[i] == '2':
+                    name[i] = 'CH2'
+                if name[i] == '3':
+                    name[i] = 'CH3'
+
+            f = open(CSV_Path)
+            f_csv2 = pd.read_csv(f, engine='python', header=1)
+
+            f_csv2.columns = name
+            temp = f_csv2.columns.values
+            print(temp)
+            f_csv2 = f_csv2.fillna(-1)
+
+            dt = (float(f_csv2.iloc[1, 0]) - float(f_csv2.iloc[0, 0]))
+            rlen = len(f_csv2)
+
+            temp = f_csv2.columns.values
+
+            try:
+                f_csv2["TIME"] = f_csv2["x-axis"]
+            except:
+                dlg = wx.MessageDialog(None, u"无时间信息（x-axis表头）", u"错误信息", wx.YES_NO | wx.ICON_QUESTION)
+                if dlg.ShowModal() == wx.ID_YES:
+                    self.m_filePicker1.SetPath('')
+                    CSV_Path = self.m_filePicker1.GetPath()
+                    self.m_comboBox1.SetFocus()
+                    # self.Close(True)
+                    dlg.Destroy()
+                # dlg.Destroy()
+
+            for i in temp:
+                if i != "x-axis":
+                    self.m_checkList3.AppendItems(i)
+
+            self.m_checkList3.Update()
+            print('file end')
+        if dt != 0:
+            f_sample1 = 1 / dt
+        else:
+            f_sample1 = 1
         t_all = dt * rlen
-
         self.m_dt.Value = ("%.4f MHz" % (f_sample1 / 1000000))
         self.m_len.Value = ("%.2f E3条" % (rlen / 1000))
         print('dt = %.2f' % dt)
-        t = np.arange(0, t_all, dt)
-        len_t = np.size(t)  # 5e6
-        print('n = %.2f' % len_t)
 
-        # TIME的位置#####
-        for i in range(0, 22):
-            if f_csv.iloc[i, 0] == 'TIME':
-                savei = i
-        print('i = %f' % i)
-        ###############################################################
         global freqDataF, f_sample2
         freqDataF = int(1)
         if f_sample1 > 250E3:
@@ -290,36 +370,15 @@ class MyFrame(plc):
         else:
             f_sample2 = f_sample1
 
-        # 分析整表####################################################################
-        f = open(CSV_Path)
-        global f_csv2
-        # 19 20
-        f_csv2 = pd.read_csv(f, engine='python', header=19)
-
-        if f_csv2.iloc[0, 0] == 'TIME':
-            f = open(CSV_Path)
-            f_csv2 = pd.read_csv(f, engine='python', header=20)
-        f_csv2 = f_csv2.fillna(-1)
+        # time_t = np.arange(0, t_all, dt)
+        # len_t = np.size(time_t)  # 5e6
+        # print('n = %.2f' % len_t)
 
         # 间隔读取####################################################################
         f_csv2 = f_csv2[f_csv2.index % freqDataF == 0]
         print(f_csv2.head(3))
         print(f_csv2.iloc[0, 0])
         print('end')
-
-        # ################### 更新勾选项 ####################
-        temp = f_csv2.columns.values
-
-        ind = ["CH1", "CH2", "CH3", "CH4"]
-        global channalName  # 表中包含的通道名
-        channalName = []
-        for i in ind:
-            if i in temp:
-                channalName.append(i)
-                self.m_checkList3.AppendItems(i)
-
-        self.m_checkList3.Update()
-        print('file end')
 
         # global Tu
         # plt.figure()

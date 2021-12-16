@@ -83,7 +83,7 @@ class plc ( wx.Frame ):
 		
 		bSizer51.Add( self.m_staticText2, 0, wx.ALL|wx.EXPAND, 5 )
 		
-		self.m_textCtrl2 = wx.TextCtrl( self, wx.ID_ANY, u"401", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.m_textCtrl2 = wx.TextCtrl( self, wx.ID_ANY, u"801", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer51.Add( self.m_textCtrl2, 0, wx.ALL|wx.EXPAND, 5 )
 		
 		gSizer31 = wx.GridSizer( 0, 2, 0, 0 )
@@ -166,7 +166,7 @@ class plc ( wx.Frame ):
 		
 		bSizer11.Add( self.m_staticText22, 0, wx.ALL, 5 )
 		
-		self.m_textCtrl13 = wx.TextCtrl( self, wx.ID_ANY, u"0", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.m_textCtrl13 = wx.TextCtrl( self, wx.ID_ANY, u"0.3333", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer11.Add( self.m_textCtrl13, 0, wx.ALL, 5 )
 		
 		
