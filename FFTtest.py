@@ -14,7 +14,18 @@ def myfft(TIME,DATA,Fs):
     P1[0] = P1[0] * 0.5
     P1 = P1 * 2
     f1 = Fs * np.linspace(0, (len / 2), int(len / 2)) / len
-    return (f1,P1,Fs/len)
+    ################################################################
+    temp_rms2 = 0;
+    for Ptemp in P1:
+        # if i == 0:
+        #     temp_rms2 = temp_rms2 + P1(0) * P1(0) * 2
+        # else:
+        #     temp_rms2 = temp_rms2 + P1(i) * P1(i)
+        temp_rms2 = temp_rms2 + Ptemp * Ptemp
+    temp_rms2 = temp_rms2 + P1[0] * P1[0]
+
+    temp_rms2 = np.sqrt(temp_rms2) / 1.414
+    return (f1,P1,Fs/len,temp_rms2)
 
 # t1 = []
 # t1 = np.arange(0,0.1,0.0001)

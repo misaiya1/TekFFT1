@@ -5,6 +5,7 @@
 import wx
 from ExcelOperator import MyFrame
 
+
 def main():
 
     app = wx.App()

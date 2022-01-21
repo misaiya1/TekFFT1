@@ -435,7 +435,7 @@ class MyFrame(plc):
         dlg.Destroy()
 
     def mOnMenuSelection1(self, event):
-        dlg = wx.MessageDialog(None, u"上海电气风电集团 电气COE\n版本:V210909", u"确认", wx.YES_DEFAULT | wx.ICON_QUESTION)
+        dlg = wx.MessageDialog(None, u"上海电气风电集团 电气COE\n版本:V1_12", u"确认", wx.YES_DEFAULT | wx.ICON_QUESTION)
         if dlg.ShowModal() == wx.ID_YES:
             self.Close(True)
         dlg.Destroy()
